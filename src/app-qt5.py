@@ -103,7 +103,7 @@ class FuzzyMatchApp(QMainWindow):
         super(FuzzyMatchApp, self).__init__()
 
         self.setWindowTitle("Fuzzy Match App")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1280, 720)
 
         self.dir_1_path = DIR1
         self.dir_2_path = DIR2
