@@ -325,8 +325,8 @@ class FuzzyMatchApp(QMainWindow):
 
     def update_table_view_with_fuzzy_match(self, fuzzy_match_results):
         self.model.clear()
-        self.model.setColumnCount(3)
-        self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images"])
+        self.model.setColumnCount(4)
+        self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images", "Chosen Image"])
 
         for index, result in enumerate(fuzzy_match_results):
             item_1 = QStandardItem(result[0])
@@ -341,7 +341,14 @@ class FuzzyMatchApp(QMainWindow):
             detected_images_sorted_data = sorted(detected_images, key=lambda x: x[1], reverse=True)
             self.options_list[index] = detected_images_sorted_data
 
-            self.model.appendRow([item_1, item_2, item_3])
+            # Add the chosen image as the 4th column
+            chosen_image_filename = result[1]  # Assuming result[1] is the chosen image filename
+            chosen_image_item = QStandardItem()
+            chosen_image_path = os.path.join(DIR2, chosen_image_filename)
+            pixmap = QPixmap(chosen_image_path).scaledToWidth(100)
+            chosen_image_item.setData(pixmap, Qt.DecorationRole)            
+
+            self.model.appendRow([item_1, item_2, item_3, chosen_image_item])
 
         self.table_view.setModel(self.model)
 
