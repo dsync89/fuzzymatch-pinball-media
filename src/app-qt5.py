@@ -154,7 +154,7 @@ class FuzzyMatchApp(QMainWindow):
         super(FuzzyMatchApp, self).__init__()
 
         self.setWindowTitle("Fuzzy Match App")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1280, 720)
 
         self.dir_1_path = DIR1
         self.dir_2_path = DIR2
@@ -175,7 +175,7 @@ class FuzzyMatchApp(QMainWindow):
 
         # Left frame
         left_frame = QFrame(self)
-        left_frame.setMinimumWidth(500)  # Set the minimum width
+        left_frame.setFixedWidth(500)  # Set the minimum width
         left_layout = QVBoxLayout(left_frame)
         left_layout.setAlignment(Qt.AlignTop)
 
@@ -259,11 +259,13 @@ class FuzzyMatchApp(QMainWindow):
         for col in range(self.model.columnCount()):
             self.table_view.horizontalHeader().setSectionResizeMode(col, QHeaderView.Stretch)
 
+        # Set the last section to stretch, ensuring it fills the remaining width
+        self.table_view.horizontalHeader().setStretchLastSection(True)
 
         # Set column widths
         self.table_view.setColumnWidth(0, 200)
         self.table_view.setColumnWidth(1, 200)
-        self.table_view.setColumnWidth(2, 400)
+        # self.table_view.setColumnWidth(2, 400)
 
     def start_fuzzy_match(self):
         self.progress_bar.setValue(0)  # Reset progress bar
