@@ -124,7 +124,7 @@ class FuzzyMatchApp(QMainWindow):
 
         # Left frame
         left_frame = QFrame(self)
-        left_frame.setMinimumWidth(500)  # Set the minimum width
+        left_frame.setFixedWidth(500)  # Set the minimum width
         left_layout = QVBoxLayout(left_frame)
         left_layout.setAlignment(Qt.AlignTop)
 
