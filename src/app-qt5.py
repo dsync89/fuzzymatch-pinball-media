@@ -1,6 +1,6 @@
 import os
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView
+from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView, QRadioButton, QDialog, QGridLayout
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
 
 from PyQt5.QtGui import QPixmap
@@ -8,9 +8,70 @@ from fuzzywuzzy import fuzz
 
 import shutil 
 
-DIR1 = "tests\\dir1\\test"
+DIR1 = "tests\\dir1"
 DIR2 = "tests\\dir2\\Clear Logo"
 OUT_DIR = "tests\\out"
+
+class ImagePopupDialog(QDialog):
+    def __init__(self, options, parent=None):
+        super(ImagePopupDialog, self).__init__(parent)
+        self.options = options
+        self.selected_option = None
+
+        self.setWindowTitle("Select Image")
+        self.setGeometry(200, 200, 600, 400)
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        grid_layout = QGridLayout()
+        self.radio_buttons = []
+
+        # Iterate through options and create grid layout
+        for i, option in enumerate(self.options[:10]):
+            row = i // 5
+            col = i % 5
+
+            cell_layout = QVBoxLayout()
+
+            img_label = QLabel(self)
+            img_path = os.path.join(DIR2, option[0])
+            pixmap = QPixmap(img_path).scaledToWidth(100)
+            img_label.setPixmap(pixmap)
+            img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+
+            radio_button = QRadioButton(option[0])
+            radio_button.setChecked(False)
+
+            cell_layout.addWidget(img_label)
+            cell_layout.addWidget(radio_button)
+            cell_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
+            grid_layout.addLayout(cell_layout, row, col)
+
+            self.radio_buttons.append(radio_button)
+
+        layout.addLayout(grid_layout)
+
+        select_button = QPushButton("Select Image", self)
+        select_button.clicked.connect(self.select_image)
+        layout.addWidget(select_button)
+
+        self.setLayout(layout)
+
+    def select_image(self):
+        for radio_button in self.radio_buttons:
+            if radio_button.isChecked():
+                self.selected_option = radio_button.text()
+                self.accept()
+
+    def select_image(self):
+        for radio_button in self.radio_buttons:
+            if radio_button.isChecked():
+                self.selected_option = radio_button.text()
+                self.accept()
 
 class FuzzyMatchThread(QThread):
     progressUpdated = pyqtSignal(int)
@@ -36,8 +97,8 @@ class FuzzyMatchThread(QThread):
         dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
         dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png"))]
 
-        dir_1_files = [os.path.splitext(file)[0] for file in dir_1_files]
-        dir_2_images = [os.path.splitext(file)[0] for file in dir_2_images]
+        # dir_1_files = [os.path.splitext(file)[0] for file in dir_1_files]
+        # dir_2_images = [os.path.splitext(file)[0] for file in dir_2_images]
 
         fuzzy_match_results = []
 
@@ -60,39 +121,29 @@ class FuzzyMatchThread(QThread):
 class ComboBoxDelegate(QItemDelegate):
     def __init__(self, parent=None, options=None):
         super(ComboBoxDelegate, self).__init__(parent)
-        self.options = options or []    
+        self.options = options or []
 
     def createEditor(self, parent, option, index):
-        combo_box = QComboBox(parent)
-        combo_box.setEditable(True)
-        combo_box.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
-        combo_box.setMinimumContentsLength(150)
+        button = QPushButton("Select Image", parent)
+        button.clicked.connect(lambda _, index=index: self.open_popup_dialog(index))
 
-        row = index.row()
-        detected_images_str = self.options[row]
-
-        mylist = []
-        for item in detected_images_str:
-            mylist.append(list(item))
-
-        mylist_str = []
-        for item in mylist:
-            mylist_str.append(f"{item[1]} | {item[0]}")
-
-        combo_box.addItems(mylist_str)
-        combo_box.currentIndexChanged.connect(self.currentIndexChanged)
-
-        return combo_box
+        return button
 
     def setEditorData(self, editor, index):
-        value = index.model().data(index, role=Qt.DisplayRole)
-        editor.setCurrentIndex(editor.findText(value))
+        pass
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), role=Qt.EditRole)
+        pass
 
-    def currentIndexChanged(self):
-        self.commitData.emit(self.sender())
+    def open_popup_dialog(self, index):
+        options = self.options.get(index.row(), [])
+        dialog = ImagePopupDialog(options, self.parent())
+
+        if dialog.exec_() == QDialog.Accepted:
+            selected_option = dialog.selected_option
+            if selected_option:
+                index.model().setData(index, selected_option, role=Qt.EditRole)
+                index.model().layoutChanged.emit()
 
 class FuzzyMatchApp(QMainWindow):
     progressUpdated = pyqtSignal(int)
@@ -132,7 +183,7 @@ class FuzzyMatchApp(QMainWindow):
         pair_1_layout = QHBoxLayout()
         dir_1_label = QLabel("Dir 1 Path:", left_frame)
         dir_1_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
-        dir_1_chosen_textfield.setReadOnly(True)  # Make it read-only
+        dir_1_chosen_textfield.setReadOnly(False)  # allow user to paste its path
         select_dir_1_button = QPushButton("...", left_frame)
         select_dir_1_button.clicked.connect(self.browse_dir_1)
         select_dir_1_button.setFixedSize(20, select_dir_1_button.sizeHint().height())
@@ -145,7 +196,7 @@ class FuzzyMatchApp(QMainWindow):
         pair_2_layout = QHBoxLayout()
         dir_2_label = QLabel("Dir 2 Path:", left_frame)
         dir_2_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
-        dir_2_chosen_textfield.setReadOnly(True)  # Make it read-only
+        dir_2_chosen_textfield.setReadOnly(False)  # allow user to paste its path
         select_dir_2_button = QPushButton("...", left_frame)
         select_dir_2_button.clicked.connect(self.browse_dir_2)
         select_dir_2_button.setFixedSize(20, select_dir_2_button.sizeHint().height())
