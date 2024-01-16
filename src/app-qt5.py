@@ -133,11 +133,12 @@ class FuzzyMatchApp(QMainWindow):
         dir_1_label = QLabel("Dir 1 Path:", left_frame)
         dir_1_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
         dir_1_chosen_textfield.setReadOnly(True)  # Make it read-only
-        select_dir_1_button = QPushButton("Select Dir 1", left_frame)
+        select_dir_1_button = QPushButton("...", left_frame)
         select_dir_1_button.clicked.connect(self.browse_dir_1)
+        select_dir_1_button.setFixedSize(20, select_dir_1_button.sizeHint().height())
         pair_1_layout.addWidget(dir_1_label)
-        pair_1_layout.addWidget(select_dir_1_button)
         pair_1_layout.addWidget(dir_1_chosen_textfield)  # Add the new label
+        pair_1_layout.addWidget(select_dir_1_button)
         left_layout.addLayout(pair_1_layout)
 
         # Pair 2: Dir 2 Label and Button
@@ -145,11 +146,12 @@ class FuzzyMatchApp(QMainWindow):
         dir_2_label = QLabel("Dir 2 Path:", left_frame)
         dir_2_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
         dir_2_chosen_textfield.setReadOnly(True)  # Make it read-only
-        select_dir_2_button = QPushButton("Select Dir 2", left_frame)
+        select_dir_2_button = QPushButton("...", left_frame)
         select_dir_2_button.clicked.connect(self.browse_dir_2)
+        select_dir_2_button.setFixedSize(20, select_dir_2_button.sizeHint().height())
         pair_2_layout.addWidget(dir_2_label)
-        pair_2_layout.addWidget(select_dir_2_button)
-        pair_2_layout.addWidget(dir_2_chosen_textfield)  # Add the new label
+        pair_2_layout.addWidget(dir_2_chosen_textfield)
+        pair_2_layout.addWidget(select_dir_2_button)  # Add the new label
         left_layout.addLayout(pair_2_layout)
 
         # Button to start fuzzy match
