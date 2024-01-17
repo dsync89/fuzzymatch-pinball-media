@@ -489,7 +489,7 @@ class FuzzyMatchApp(QMainWindow):
         column_3_values = self.get_column_values(2)
 
         for index, filename in enumerate(column_3_values):
-            if filename == '':
+            if len(filename.strip()) == 0:
                 continue
 
             if '|' in filename:
