@@ -176,6 +176,9 @@ class ComboBoxDelegate(QItemDelegate):
         self.options = options or []
         self.DIR2 = DIR2  # Store DIR2 as an instance variable
 
+    def set_DIR2(self, DIR2):
+        self.DIR2 = DIR2        
+
     def createEditor(self, parent, option, index):
         button = QPushButton("Select Image", parent)
         button.clicked.connect(lambda _, index=index: self.open_popup_dialog(index))
@@ -376,6 +379,11 @@ class FuzzyMatchApp(QMainWindow):
 
         self.DIR1 = dir_1_path
         self.DIR2 = dir_2_path
+
+        # update comboboxdelgate
+        combo_box_delegate = self.table_view.itemDelegateForColumn(2)
+        if combo_box_delegate:
+            combo_box_delegate.set_DIR2(self.DIR2)
 
     def update_status_label(self, filename):
         if len(filename) > 50:
