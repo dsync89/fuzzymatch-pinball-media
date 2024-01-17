@@ -475,8 +475,9 @@ class FuzzyMatchApp(QMainWindow):
             self.model.appendRow([item_1, item_2, item_3, chosen_image_item])
 
         # Update the statistics label
-        percentage_matched_cells = int ( ( (total_rows_column_1 - empty_cells_count) / total_rows_column_1 ) * 100 ) 
-        self.statistics_label.setText(f"Statistics: {empty_cells_count} / {total_rows_column_1} [{percentage_matched_cells}%] matched cells in Column 3")
+        total_matched_cells = total_rows_column_1 - empty_cells_count
+        percentage_matched_cells = int ( ( total_matched_cells / total_rows_column_1 ) * 100 ) 
+        self.statistics_label.setText(f"Statistics: {total_matched_cells} / {total_rows_column_1} [{percentage_matched_cells}%] matched cells in Column 3")
 
         self.table_view.setModel(self.model)
 
