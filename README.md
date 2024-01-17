@@ -11,6 +11,8 @@ Also helped me to learn about python QT framework.
 # Usage
 Double click any cell in Column 3 then click [Select Image] button to choose any other matched images with match ratio > 65% 
 
+![image](https://github.com/dsync89/fuzzymatch-pinball-media/assets/12208390/b853e0c0-0b2c-4494-ab22-020dcc909a10)
+
 # TODO
 - Store each path per platform
 - Show image preview for the selections
