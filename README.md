@@ -6,6 +6,11 @@ Best used in frontend like Pinup Popper because of the way it matches the media 
 
 Also helped me to learn about python QT framework.
 
+![image](https://github.com/dsync89/fuzzymatch-pinball-media/assets/12208390/0641e406-2ab0-43f1-b421-c9edbf95f148)
+
+# Usage
+Double click any cell in Column 3 then click [Select Image] button to choose any other matched images with match ratio > 65% 
+
 # TODO
 - Store each path per platform
 - Show image preview for the selections
