@@ -331,10 +331,36 @@ class FuzzyMatchApp(QMainWindow):
         self.table_view.setColumnWidth(1, 200)
         # self.table_view.setColumnWidth(2, 400)
 
+    def show_directory_error_dialog(self):
+        error_dialog = QDialog(self)
+        error_dialog.setWindowTitle("Directory Error")
+        error_dialog.setGeometry(300, 300, 400, 100)
+
+        layout = QVBoxLayout()
+
+        error_label = QLabel("One or both of the selected directories are invalid or do not exist.")
+        layout.addWidget(error_label)
+
+        ok_button = QPushButton("OK", error_dialog)
+        ok_button.clicked.connect(error_dialog.accept)
+        layout.addWidget(ok_button)
+
+        error_dialog.setLayout(layout)
+        error_dialog.exec_()        
+
     def start_fuzzy_match(self):
+        # check if dir is valid, it not display error as popup dialog
+        dir_1_path = self.leftframe_dir_1_chosen_textfield.text()
+        dir_2_path = self.leftframe_dir_2_chosen_textfield.text()
+
+        if not os.path.isdir(dir_1_path) or not os.path.isdir(dir_2_path):
+            self.show_directory_error_dialog()
+            return        
+        
         self.progress_bar.setValue(0)  # Reset progress bar
         self.status_label.setText("Processing...")
-        self.fuzzy_thread.setDirectories(self.dir_1_path, self.dir_2_path)
+
+        self.fuzzy_thread.setDirectories(dir_1_path, dir_2_path)
         self.fuzzy_thread.start()        
 
     def update_status_label(self, filename):
