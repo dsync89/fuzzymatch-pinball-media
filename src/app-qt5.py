@@ -34,21 +34,36 @@ class ImagePopupDialog(QDialog):
         grid_layout = QGridLayout()
         self.radio_buttons = []
 
-        # Iterate through options and create grid layout
+        # add a dummy empty option to the beginning so that user can choose none
+        if self.options[0] != "":
+            self.options.insert(0, "")
+
+        # Iterate through options and create grid layout (left to right, 5 item per row)
         for i, option in enumerate(self.options[:10]):
             row = i // 5
             col = i % 5
 
             cell_layout = QVBoxLayout()
 
-            img_label = QLabel(self)
-            img_path = os.path.join(DIR2, option[0])
-            pixmap = QPixmap(img_path).scaledToWidth(100)
-            img_label.setPixmap(pixmap)
-            img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+            if i == 0: # the first item
+                img_label = QLabel(self)
+                img_path = os.path.join("assets", "no-image.jpg")
+                pixmap = QPixmap(img_path).scaledToWidth(100)
+                img_label.setPixmap(pixmap)
+                img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
 
-            radio_button = QRadioButton(option[0] + f"[{option[1]}]") # print image name + ratio
-            radio_button.setChecked(False)
+                radio_button = QRadioButton(" ")
+                radio_button.setChecked(False)
+
+            else:
+                img_label = QLabel(self)
+                img_path = os.path.join(DIR2, option[0])
+                pixmap = QPixmap(img_path).scaledToWidth(100)
+                img_label.setPixmap(pixmap)
+                img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+
+                radio_button = QRadioButton(option[0] + f"[{option[1]}]") # print image name + ratio
+                radio_button.setChecked(False)
 
             cell_layout.addWidget(img_label)
             cell_layout.addWidget(radio_button)
@@ -265,7 +280,7 @@ class FuzzyMatchApp(QMainWindow):
         self.options_list = {}
 
         # must initialize at least one
-        self.options_list[0] = "abc"
+        self.options_list[0] = ""
 
         # Set custom delegate for the third column
         combo_box_delegate = ComboBoxDelegate(self.table_view, options=self.options_list)
