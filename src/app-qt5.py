@@ -13,15 +13,16 @@ import debugpy
 
 debugpy.listen(('localhost', 5678))
 
-DIR1 = "r:\\ROMS-1G1R\\pinball\\Visual Pinball\\test"
-DIR2 = "c:\\PinUPSystem\\POPMedia\\Visual Pinball X\\Audio"
+# DIR1 = "r:\\ROMS-1G1R\\pinball\\Visual Pinball\\test"
+# DIR2 = "c:\\PinUPSystem\\POPMedia\\Visual Pinball X\\Audio"
 OUT_DIR = "tests\\out"
 
 class ImagePopupDialog(QDialog):
-    def __init__(self, options, parent=None):
+    def __init__(self, options, DIR2, parent=None):
         super(ImagePopupDialog, self).__init__(parent)
         self.options = options
         self.selected_option = None
+        self.DIR2 = DIR2
 
         self.setWindowTitle("Select Image")
         self.setGeometry(200, 200, 600, 400)
@@ -57,7 +58,7 @@ class ImagePopupDialog(QDialog):
 
             else:
                 img_label = QLabel(self)
-                img_path = os.path.join(DIR2, option[0])
+                img_path = os.path.join(self.DIR2, option[0])
                 pixmap = QPixmap(img_path).scaledToWidth(100)
                 img_label.setPixmap(pixmap)
                 img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
@@ -167,9 +168,10 @@ class FuzzyMatchThread(QThread):
         return fuzzy_match_results
 
 class ComboBoxDelegate(QItemDelegate):
-    def __init__(self, parent=None, options=None):
+    def __init__(self, parent=None, options=None, DIR2=None):
         super(ComboBoxDelegate, self).__init__(parent)
         self.options = options or []
+        self.DIR2 = DIR2  # Store DIR2 as an instance variable
 
     def createEditor(self, parent, option, index):
         button = QPushButton("Select Image", parent)
@@ -185,7 +187,7 @@ class ComboBoxDelegate(QItemDelegate):
 
     def open_popup_dialog(self, index):
         options = self.options.get(index.row(), [])
-        dialog = ImagePopupDialog(options, self.parent())
+        dialog = ImagePopupDialog(options, self.DIR2, self.parent())
 
         if dialog.exec_() == QDialog.Accepted:
             selected_option = dialog.selected_option
@@ -220,8 +222,10 @@ class FuzzyMatchApp(QMainWindow):
         self.setWindowTitle("Fuzzy Match App")
         self.setGeometry(100, 100, 1280, 720)
 
-        self.dir_1_path = DIR1
-        self.dir_2_path = DIR2
+        self.dir_1_path = ""
+        self.dir_2_path = ""
+        self.DIR1 = ""
+        self.DIR2 = ""     
 
         self.fuzzy_thread = FuzzyMatchThread()
         self.fuzzy_thread.resultReady.connect(self.update_table_view_with_fuzzy_match)
@@ -320,7 +324,7 @@ class FuzzyMatchApp(QMainWindow):
         self.options_list[0] = ""
 
         # Set custom delegate for the third column
-        combo_box_delegate = ComboBoxDelegate(self.table_view, options=self.options_list)
+        combo_box_delegate = ComboBoxDelegate(self.table_view, options=self.options_list, DIR2=self.DIR2)
         self.table_view.setItemDelegateForColumn(2, combo_box_delegate)
 
         # Set column widths
@@ -366,6 +370,9 @@ class FuzzyMatchApp(QMainWindow):
 
         self.fuzzy_thread.setDirectories(dir_1_path, dir_2_path)
         self.fuzzy_thread.start()        
+
+        self.DIR1 = dir_1_path
+        self.DIR2 = dir_2_path
 
     def update_status_label(self, filename):
         if len(filename) > 50:
@@ -444,7 +451,7 @@ class FuzzyMatchApp(QMainWindow):
             # Add the chosen image as the 4th column
             chosen_image_filename = result[1][2]  # Assuming result[1] is the chosen image filename
             chosen_image_item = QStandardItem()
-            chosen_image_path = os.path.join(DIR2, chosen_image_filename)
+            chosen_image_path = os.path.join(self.DIR2, chosen_image_filename)
             pixmap = QPixmap(chosen_image_path).scaledToWidth(100)
             chosen_image_item.setData(pixmap, Qt.DecorationRole)    
 
@@ -491,7 +498,7 @@ class FuzzyMatchApp(QMainWindow):
             ahk_filename, ahk_file_extension = os.path.splitext(column_1_values[index])
             img_filename, img_file_extension = os.path.splitext(filename)
 
-            src_file = os.path.join(DIR2, filename)
+            src_file = os.path.join(self.DIR2, filename)
             dest_file = os.path.join(OUT_DIR, f"{ahk_filename}{img_file_extension}")
             print(f"Copying [ {src_file} ] => [ {dest_file} ]")
             shutil.copy2(src_file, dest_file)
