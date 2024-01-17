@@ -9,6 +9,10 @@ from fuzzywuzzy import fuzz
 import shutil 
 import re
 
+import debugpy
+
+debugpy.listen(('localhost', 5678))
+
 DIR1 = "r:\\ROMS-1G1R\\pinball\\Visual Pinball\\test"
 DIR2 = "c:\\PinUPSystem\\POPMedia\\Visual Pinball X\\Audio"
 OUT_DIR = "tests\\out"
@@ -90,6 +94,7 @@ class FuzzyMatchThread(QThread):
         self.dir_2_path = dir_2_path
 
     def run(self):
+        debugpy.breakpoint()
         fuzzy_match_results = self.perform_fuzzy_match(self.dir_1_path, self.dir_2_path)
         self.progressUpdated.emit(100)  # Signal completion
         self.resultReady.emit(fuzzy_match_results)
