@@ -85,13 +85,16 @@ class ImagePopupDialog(QDialog):
     def select_image(self):
         for radio_button in self.radio_buttons:
             if radio_button.isChecked():
-                self.selected_option = radio_button.text()
-                self.accept()
+                # return the selected radio button text withou the [ratio]
 
-    def select_image(self):
-        for radio_button in self.radio_buttons:
-            if radio_button.isChecked():
-                self.selected_option = radio_button.text()
+                if '[' in radio_button.text():
+                    last_bracket_index = radio_button.text().rfind('[')
+
+                    # Extract text from the first character until the last '['
+                    self.selected_option = radio_button.text()[:last_bracket_index]
+
+                else:
+                    self.selected_option = radio_button.text()
                 self.accept()
 
 class FuzzyMatchThread(QThread):
