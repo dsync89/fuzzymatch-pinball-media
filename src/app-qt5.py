@@ -280,7 +280,11 @@ class FuzzyMatchApp(QMainWindow):
 
         # Progress bar
         self.progress_bar = QProgressBar(left_frame)
-        left_layout.addWidget(self.progress_bar)        
+        left_layout.addWidget(self.progress_bar)  
+
+        # Statistics label
+        self.statistics_label = QLabel("Statistics: 0 empty cells in Column 3", left_frame)
+        left_layout.addWidget(self.statistics_label)              
 
         layout.addWidget(left_frame)
         
@@ -418,10 +422,15 @@ class FuzzyMatchApp(QMainWindow):
         self.model.setColumnCount(4)
         self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images", "Chosen Image"])
 
+        empty_cells_count = 0  # Counter for empty cells in column 3        
+        total_rows_column_1 = 0  # Counter for total rows in column 1
+
         for index, result in enumerate(fuzzy_match_results):
             item_1 = QStandardItem(result[0])
             item_2 = QStandardItem(result[1][2])
             item_3 = QStandardItem(result[1][2])
+
+            total_rows_column_1 += 1  # Increment count for total rows in column 1
 
             detected_images = []
 
@@ -449,12 +458,18 @@ class FuzzyMatchApp(QMainWindow):
                     item_3.setBackground(QBrush(QColor(255, 255, 0))) # yellow
                 elif detected_images_sorted_data[0][1] < 65:
                     item_3 = QStandardItem("")
+                    empty_cells_count += 1  # Increment count for empty cells
 
             except Exception as e:
                 print(f"An error occurred: {e}") 
-                item_3 = QStandardItem("")               
+                item_3 = QStandardItem("")        
+                empty_cells_count += 1  # Increment count for empty cells        
 
             self.model.appendRow([item_1, item_2, item_3, chosen_image_item])
+
+        # Update the statistics label
+        percentage_matched_cells = int ( ( (total_rows_column_1 - empty_cells_count) / total_rows_column_1 ) * 100 ) 
+        self.statistics_label.setText(f"Statistics: {empty_cells_count} / {total_rows_column_1} [{percentage_matched_cells}%] matched cells in Column 3")
 
         self.table_view.setModel(self.model)
 
