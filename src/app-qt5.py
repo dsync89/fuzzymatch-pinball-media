@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView, QRadioButton, QDialog, QGridLayout
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
+from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView, QRadioButton, QDialog, QGridLayout, QStyleOptionViewItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
 
 from PyQt5.QtGui import QPixmap
 from fuzzywuzzy import fuzz
@@ -360,9 +360,17 @@ class FuzzyMatchApp(QMainWindow):
             pixmap = QPixmap(chosen_image_path).scaledToWidth(100)
             chosen_image_item.setData(pixmap, Qt.DecorationRole)    
 
+            # colorize
             try:
-                if detected_images_sorted_data[0][1] <= 65:
+                if detected_images_sorted_data[0][1] >= 100:
+                    item_3.setBackground(QBrush(QColor(0, 255, 0))) 
+                elif detected_images_sorted_data[0][1] >= 80:
+                    item_3.setBackground(QBrush(QColor(0, 200, 0))) 
+                elif detected_images_sorted_data[0][1] >= 65:
+                    item_3.setBackground(QBrush(QColor(255, 255, 0))) # yellow
+                elif detected_images_sorted_data[0][1] < 65:
                     item_3 = QStandardItem("")
+
             except Exception as e:
                 print(f"An error occurred: {e}") 
                 item_3 = QStandardItem("")               
