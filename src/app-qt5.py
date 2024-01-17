@@ -114,38 +114,55 @@ class FuzzyMatchThread(QThread):
         self.progressUpdated.emit(100)  # Signal completion
         self.resultReady.emit(fuzzy_match_results)
 
+    def gen_file_tuples(self, dir_1_files):
+        dir_1_files_tuples = [] # (filename_without_ext, regexed_filename_without_ext, filename_with_ext)
+
+        for file in dir_1_files:
+            basename = os.path.splitext(file)[0]
+            match = re.search(r'^[^(\[]+', basename)
+
+            if match:
+                regexed_basename = match.group(0)
+            else:
+                regexed_basename = basename    
+
+            dir_1_files_tuples.append((basename, regexed_basename, file))
+        
+        return dir_1_files_tuples    
+
     def perform_fuzzy_match(self, dir_1_path, dir_2_path):
         dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
-        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png", ".mp3"))]
+        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png", ".mp3", ".mp4", ".f4v"))]
 
         # dir_1_files_filenames = [os.path.splitext(file)[0] for file in dir_1_files]
         # dir_2_images_filenames = [os.path.splitext(file)[0] for file in dir_2_images]
 
-        dir_1_files_filenames = [
-            re.search(r'^[^(\[]+', file_1).group(0) if re.search(r'^[^(\[]+', file_1) else file_1
-            for file_1 in [os.path.splitext(file)[0] for file in dir_1_files]
-        ]
-
-        dir_2_images_filenames = [
-            re.search(r'^[^(\[]+', file_1).group(0) if re.search(r'^[^(\[]+', file_1) else file_1
-            for file_1 in [os.path.splitext(file)[0] for file in dir_2_images]
-        ]        
+        dir_1_files_tuples = self.gen_file_tuples(dir_1_files) # (filename_without_ext, regexed_filename_without_ext, filename_with_ext)
+        dir_2_images_tuples = self.gen_file_tuples(dir_2_images) # (filename_without_ext, regexed_filename_without_ext, filename_with_ext)
 
         fuzzy_match_results = []
 
         total_files = len(dir_1_files)
         processed_files = 0
 
-        for file_1 in dir_1_files_filenames:
-            best_match = max(dir_2_images_filenames, key=lambda file_2: fuzz.ratio(file_1, file_2))
-            detected_images = [(file, fuzz.ratio(file_1, file)) for file in dir_2_images_filenames if fuzz.ratio(file_1, file) >= 50]
+        for file_1 in dir_1_files_tuples:
+            # find best match
+            best_match = max(dir_2_images_tuples, key=lambda file_2: fuzz.ratio(file_1[1], file_2[1]))
 
-            fuzzy_match_results.append((file_1, best_match, detected_images))
+            # generate tuple (filename, ratio)
+            detected_images = []
+            for file in dir_2_images_tuples:
+                ratio = fuzz.ratio(file_1[1], file[1])
+
+                if ratio >= 50:
+                    detected_images.append((file[2], ratio))
+
+            fuzzy_match_results.append((file_1[2], best_match, detected_images))
 
             processed_files += 1
             progress_percentage = int(processed_files / total_files * 100)
             self.progressUpdated.emit(progress_percentage)
-            self.fileProcessed.emit(file_1)
+            self.fileProcessed.emit(file_1[2])
 
         return fuzzy_match_results
 
@@ -175,6 +192,22 @@ class ComboBoxDelegate(QItemDelegate):
             if selected_option:
                 index.model().setData(index, selected_option, role=Qt.EditRole)
                 index.model().layoutChanged.emit()
+
+    # def paint(self, painter, option, index):
+    #     super().paint(painter, option, index)
+
+    #     # Check if the text in the third column contains 'abc'
+    #     if index.column() == 2 and '24' in index.data(Qt.DisplayRole):
+    #         # Highlight the item by drawing a colored background
+    #         option = QStyleOptionViewItem(option)
+    #         option.palette.setColor(option.palette.Highlight, QColor(255, 255, 0))  # Yellow color
+    #         option.palette.setColor(option.palette.HighlightedText, QColor(0, 0, 0))  # Black color
+    #         self.drawBackground(painter, option, index)                
+
+    def data(self, index, role):
+        if role == Qt.BackgroundRole and index.column() == 2 and '24' in index.data(Qt.DisplayRole):
+            return QBrush(QColor(255, 255, 0))  # Yellow color
+        return super().data(index, role)
 
 class FuzzyMatchApp(QMainWindow):
     progressUpdated = pyqtSignal(int)
@@ -361,8 +394,8 @@ class FuzzyMatchApp(QMainWindow):
 
         for index, result in enumerate(fuzzy_match_results):
             item_1 = QStandardItem(result[0])
-            item_2 = QStandardItem(result[1])
-            item_3 = QStandardItem(result[1])
+            item_2 = QStandardItem(result[1][2])
+            item_3 = QStandardItem(result[1][2])
 
             detected_images = []
 
@@ -374,7 +407,7 @@ class FuzzyMatchApp(QMainWindow):
             self.options_list[index] = detected_images_sorted_data
 
             # Add the chosen image as the 4th column
-            chosen_image_filename = result[1]  # Assuming result[1] is the chosen image filename
+            chosen_image_filename = result[1][2]  # Assuming result[1] is the chosen image filename
             chosen_image_item = QStandardItem()
             chosen_image_path = os.path.join(DIR2, chosen_image_filename)
             pixmap = QPixmap(chosen_image_path).scaledToWidth(100)
