@@ -324,7 +324,7 @@ class FuzzyMatchApp(QMainWindow):
         self.options_list = {}
 
         # must initialize at least one
-        self.options_list[0] = ""
+        self.options_list[0] = "zzz"
 
         # Set custom delegate for the third column
         combo_box_delegate = ComboBoxDelegate(self.table_view, options=self.options_list, DIR2=self.DIR2)
