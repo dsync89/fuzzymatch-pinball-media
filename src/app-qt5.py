@@ -7,9 +7,10 @@ from PyQt5.QtGui import QPixmap
 from fuzzywuzzy import fuzz
 
 import shutil 
+import re
 
-DIR1 = "tests\\dir1"
-DIR2 = "tests\\dir2\\Clear Logo"
+DIR1 = "r:\\ROMS-1G1R\\pinball\\Visual Pinball\\test"
+DIR2 = "c:\\PinUPSystem\\POPMedia\\Visual Pinball X\\Audio"
 OUT_DIR = "tests\\out"
 
 class ImagePopupDialog(QDialog):
@@ -42,7 +43,7 @@ class ImagePopupDialog(QDialog):
             img_label.setPixmap(pixmap)
             img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
 
-            radio_button = QRadioButton(option[0])
+            radio_button = QRadioButton(option[0] + f"[{option[1]}]") # print image name + ratio
             radio_button.setChecked(False)
 
             cell_layout.addWidget(img_label)
@@ -95,19 +96,29 @@ class FuzzyMatchThread(QThread):
 
     def perform_fuzzy_match(self, dir_1_path, dir_2_path):
         dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
-        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png"))]
+        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png", ".mp3"))]
 
-        # dir_1_files = [os.path.splitext(file)[0] for file in dir_1_files]
-        # dir_2_images = [os.path.splitext(file)[0] for file in dir_2_images]
+        # dir_1_files_filenames = [os.path.splitext(file)[0] for file in dir_1_files]
+        # dir_2_images_filenames = [os.path.splitext(file)[0] for file in dir_2_images]
+
+        dir_1_files_filenames = [
+            re.search(r'^[^(\[]+', file_1).group(0) if re.search(r'^[^(\[]+', file_1) else file_1
+            for file_1 in [os.path.splitext(file)[0] for file in dir_1_files]
+        ]
+
+        dir_2_images_filenames = [
+            re.search(r'^[^(\[]+', file_1).group(0) if re.search(r'^[^(\[]+', file_1) else file_1
+            for file_1 in [os.path.splitext(file)[0] for file in dir_2_images]
+        ]        
 
         fuzzy_match_results = []
 
         total_files = len(dir_1_files)
         processed_files = 0
 
-        for file_1 in dir_1_files:
-            best_match = max(dir_2_images, key=lambda file_2: fuzz.ratio(file_1, file_2))
-            detected_images = [(file, fuzz.ratio(file_1, file)) for file in dir_2_images if fuzz.ratio(file_1, file) >= 10]
+        for file_1 in dir_1_files_filenames:
+            best_match = max(dir_2_images_filenames, key=lambda file_2: fuzz.ratio(file_1, file_2))
+            detected_images = [(file, fuzz.ratio(file_1, file)) for file in dir_2_images_filenames if fuzz.ratio(file_1, file) >= 50]
 
             fuzzy_match_results.append((file_1, best_match, detected_images))
 
@@ -297,7 +308,7 @@ class FuzzyMatchApp(QMainWindow):
     #     fuzzy_match_results = self.perform_fuzzy_match(self.dir_1_path, self.dir_2_path)
     #     self.update_table_view_with_fuzzy_match(fuzzy_match_results)
 
-    def perform_fuzzy_match(self, dir_1_path, dir_2_path):
+    def perform_fuzzy_matc2(self, dir_1_path, dir_2_path):
         dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
         dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png"))]
 
@@ -336,6 +347,7 @@ class FuzzyMatchApp(QMainWindow):
             detected_images = []
 
             for file, ratio in result[2]:
+                # if ratio > 40:
                 detected_images.append((file, ratio))
 
             detected_images_sorted_data = sorted(detected_images, key=lambda x: x[1], reverse=True)
@@ -346,7 +358,14 @@ class FuzzyMatchApp(QMainWindow):
             chosen_image_item = QStandardItem()
             chosen_image_path = os.path.join(DIR2, chosen_image_filename)
             pixmap = QPixmap(chosen_image_path).scaledToWidth(100)
-            chosen_image_item.setData(pixmap, Qt.DecorationRole)            
+            chosen_image_item.setData(pixmap, Qt.DecorationRole)    
+
+            try:
+                if detected_images_sorted_data[0][1] <= 65:
+                    item_3 = QStandardItem("")
+            except Exception as e:
+                print(f"An error occurred: {e}") 
+                item_3 = QStandardItem("")               
 
             self.model.appendRow([item_1, item_2, item_3, chosen_image_item])
 
