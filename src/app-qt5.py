@@ -137,8 +137,8 @@ class FuzzyMatchThread(QThread):
         return dir_1_files_tuples    
 
     def perform_fuzzy_match(self, dir_1_path, dir_2_path):
-        dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
-        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png", ".mp3", ".mp4", ".f4v"))]
+        dir_1_files = [file for file in os.listdir(dir_1_path) if file.lower().endswith((".ahk", ".zip"))]
+        dir_2_images = [file for file in os.listdir(dir_2_path) if file.lower().endswith((".jpg", ".png", ".mp3", ".mp4", ".f4v"))]
 
         # dir_1_files_filenames = [os.path.splitext(file)[0] for file in dir_1_files]
         # dir_2_images_filenames = [os.path.splitext(file)[0] for file in dir_2_images]
