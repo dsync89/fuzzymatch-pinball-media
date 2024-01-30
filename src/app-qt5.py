@@ -36,43 +36,45 @@ class ImagePopupDialog(QDialog):
         self.radio_buttons = []
 
         # add a dummy empty option to the beginning so that user can choose none
-        if self.options[0] != "":
-            self.options.insert(0, "")
+        if len(self.options) > 0:
+            
+            if self.options[0] != "":
+                self.options.insert(0, "")
 
-        # Iterate through options and create grid layout (left to right, 5 item per row)
-        for i, option in enumerate(self.options[:10]):
-            row = i // 5
-            col = i % 5
+            # Iterate through options and create grid layout (left to right, 5 item per row)
+            for i, option in enumerate(self.options[:10]):
+                row = i // 5
+                col = i % 5
 
-            cell_layout = QVBoxLayout()
+                cell_layout = QVBoxLayout()
 
-            if i == 0: # the first item
-                img_label = QLabel(self)
-                img_path = os.path.join("assets", "no-image.jpg")
-                pixmap = QPixmap(img_path).scaledToWidth(100)
-                img_label.setPixmap(pixmap)
-                img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+                if i == 0: # the first item
+                    img_label = QLabel(self)
+                    img_path = os.path.join("assets", "no-image.jpg")
+                    pixmap = QPixmap(img_path).scaledToWidth(100)
+                    img_label.setPixmap(pixmap)
+                    img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
 
-                radio_button = QRadioButton(" ")
-                radio_button.setChecked(False)
+                    radio_button = QRadioButton(" ")
+                    radio_button.setChecked(False)
 
-            else:
-                img_label = QLabel(self)
-                img_path = os.path.join(self.DIR2, option[0])
-                pixmap = QPixmap(img_path).scaledToWidth(100)
-                img_label.setPixmap(pixmap)
-                img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+                else:
+                    img_label = QLabel(self)
+                    img_path = os.path.join(self.DIR2, option[0])
+                    pixmap = QPixmap(img_path).scaledToWidth(100)
+                    img_label.setPixmap(pixmap)
+                    img_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
 
-                radio_button = QRadioButton(option[0] + f"[{option[1]}]") # print image name + ratio
-                radio_button.setChecked(False)
+                    radio_button = QRadioButton(option[0] + f"[{option[1]}]") # print image name + ratio
+                    radio_button.setChecked(False)
 
-            cell_layout.addWidget(img_label)
-            cell_layout.addWidget(radio_button)
-            cell_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+                cell_layout.addWidget(img_label)
+                cell_layout.addWidget(radio_button)
+                cell_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-            grid_layout.addLayout(cell_layout, row, col)
+                grid_layout.addLayout(cell_layout, row, col)
 
-            self.radio_buttons.append(radio_button)
+                self.radio_buttons.append(radio_button)
 
         layout.addLayout(grid_layout)
 
