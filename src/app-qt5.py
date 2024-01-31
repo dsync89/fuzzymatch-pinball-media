@@ -502,7 +502,7 @@ class FuzzyMatchApp(QMainWindow):
             return        
         
         self.progress_bar.setValue(0)  # Reset progress bar
-        self.status_label.setText("Processing...")
+        self.status_label.setText("Result")
 
         self.fuzzy_thread.setDirectories(dir_1_path, dir_2_path)
         self.fuzzy_thread.setFileExtensions(self.settings.rom_extension_chosen, self.settings.media_extension_chosen)
