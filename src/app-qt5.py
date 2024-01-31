@@ -1,6 +1,6 @@
 import os
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView, QRadioButton, QDialog, QGridLayout, QStyleOptionViewItem
+from PyQt5.QtWidgets import QItemDelegate, QApplication, QMainWindow, QFileDialog, QPushButton, QVBoxLayout, QWidget, QTableView, QComboBox, QStyledItemDelegate, QLabel, QFrame, QHBoxLayout, QLineEdit, QProgressBar, QHeaderView, QRadioButton, QDialog, QGridLayout, QStyleOptionViewItem, QGroupBox, QCheckBox
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
 
 from PyQt5.QtGui import QPixmap
@@ -17,8 +17,22 @@ debugpy.listen(('localhost', 5678))
 # DIR2 = "c:\\PinUPSystem\\POPMedia\\Visual Pinball X\\Audio"
 OUT_DIR = "tests\\out"
 
+class Settings:
+    def __init__(self):
+        self.selected_image_match_ratio_default = "55"
+        self.selected_image_match_ratio_chosen = ""
+
+        self.rom_extension_default="ahk,zip"
+        self.rom_extension_chosen=""
+
+        self.media_extension_default="jpg,png,mp3,mp4,f4v"
+        self.media_extension_chosen=""        
+
+        self.max_image_to_show=20
+
+# Show images in 5 images in a row
 class ImagePopupDialog(QDialog):
-    def __init__(self, options, DIR2, parent=None):
+    def __init__(self, options, DIR2, settings, parent=None):
         super(ImagePopupDialog, self).__init__(parent)
         self.options = options
         self.selected_option = None
@@ -26,6 +40,9 @@ class ImagePopupDialog(QDialog):
 
         self.setWindowTitle("Select Image")
         self.setGeometry(200, 200, 600, 400)
+
+        self.item_per_row = 5 # 5 images per row
+        self.max_item_show = int(settings.max_image_to_show)  # maximum item to show
 
         self.init_ui()
 
@@ -42,9 +59,9 @@ class ImagePopupDialog(QDialog):
                 self.options.insert(0, "")
 
             # Iterate through options and create grid layout (left to right, 5 item per row)
-            for i, option in enumerate(self.options[:10]):
-                row = i // 5
-                col = i % 5
+            for i, option in enumerate(self.options[:self.max_item_show]):
+                row = i // self.item_per_row
+                col = i % self.item_per_row
 
                 cell_layout = QVBoxLayout()
 
@@ -109,14 +126,24 @@ class FuzzyMatchThread(QThread):
         super(FuzzyMatchThread, self).__init__(parent)
         self.dir_1_path = ""
         self.dir_2_path = ""
+        self.selected_image_match_ratio = ""
+        self.dir_1_extension = ""
+        self.dir_2_extension = ""
 
     def setDirectories(self, dir_1_path, dir_2_path):
         self.dir_1_path = dir_1_path
         self.dir_2_path = dir_2_path
 
+    def setFileExtensions(self, dir_1_extension, dir_2_extension):
+        self.dir_1_extension = dir_1_extension
+        self.dir_2_extension = dir_2_extension
+
+    def setSelectedImageMatchRatio(self, match_ratio):
+        self.selected_image_match_ratio = match_ratio
+
     def run(self):
         debugpy.breakpoint()
-        fuzzy_match_results = self.perform_fuzzy_match(self.dir_1_path, self.dir_2_path)
+        fuzzy_match_results = self.perform_fuzzy_match( self.dir_1_path, self.dir_2_path, tuple("." + ext for ext in self.dir_1_extension.split(",")), tuple("." + ext for ext in self.dir_2_extension.split(",")) )
         self.progressUpdated.emit(100)  # Signal completion
         self.resultReady.emit(fuzzy_match_results)
 
@@ -136,9 +163,12 @@ class FuzzyMatchThread(QThread):
         
         return dir_1_files_tuples    
 
-    def perform_fuzzy_match(self, dir_1_path, dir_2_path):
-        dir_1_files = [file for file in os.listdir(dir_1_path) if file.lower().endswith((".ahk", ".zip"))]
-        dir_2_images = [file for file in os.listdir(dir_2_path) if file.lower().endswith((".jpg", ".png", ".mp3", ".mp4", ".f4v"))]
+    # dir_1_extension: tuple, e.g. (".jpg", ".png")
+    def perform_fuzzy_match(self, dir_1_path, dir_2_path, dir_1_extension, dir_2_extension):
+        # dir_1_files = [file for file in os.listdir(dir_1_path) if file.lower().endswith((".ahk", ".zip"))]
+        # dir_2_images = [file for file in os.listdir(dir_2_path) if file.lower().endswith((".jpg", ".png", ".mp3", ".mp4", ".f4v"))]
+        dir_1_files = [file for file in os.listdir(dir_1_path) if file.lower().endswith(dir_1_extension)]
+        dir_2_images = [file for file in os.listdir(dir_2_path) if file.lower().endswith(dir_2_extension)]        
 
         # dir_1_files_filenames = [os.path.splitext(file)[0] for file in dir_1_files]
         # dir_2_images_filenames = [os.path.splitext(file)[0] for file in dir_2_images]
@@ -181,6 +211,9 @@ class ComboBoxDelegate(QItemDelegate):
     def set_DIR2(self, DIR2):
         self.DIR2 = DIR2        
 
+    def setSettings(self, settings):
+        self.settings = settings
+
     def createEditor(self, parent, option, index):
         button = QPushButton("Select Image", parent)
         button.clicked.connect(lambda _, index=index: self.open_popup_dialog(index))
@@ -195,7 +228,7 @@ class ComboBoxDelegate(QItemDelegate):
 
     def open_popup_dialog(self, index):
         options = self.options.get(index.row(), [])
-        dialog = ImagePopupDialog(options, self.DIR2, self.parent())
+        dialog = ImagePopupDialog(options, self.DIR2, self.settings, self.parent())
 
         if dialog.exec_() == QDialog.Accepted:
             selected_option = dialog.selected_option
@@ -240,8 +273,26 @@ class FuzzyMatchApp(QMainWindow):
         self.fuzzy_thread.progressUpdated.connect(self.update_progress_bar)
         self.fuzzy_thread.fileProcessed.connect(self.update_status_label)
 
+        # self.settings = {
+        #     "selected_image_match_ratio_chosen": "",
+        #     "selected_image_match_ratio_default": "55",
+        # }
+        self.settings = Settings()
+
                 
         self.setup_ui()
+
+    def show_help_dialog(self, help_text):
+        help_dialog = QDialog(self)
+        help_dialog.setWindowTitle("Help")
+        
+        help_layout = QVBoxLayout()
+        help_text = QLabel(help_text)
+        
+        help_layout.addWidget(help_text)
+        help_dialog.setLayout(help_layout)
+
+        help_dialog.exec_()        
 
     def setup_ui(self):
         central_widget = QWidget(self)
@@ -255,31 +306,94 @@ class FuzzyMatchApp(QMainWindow):
         left_layout = QVBoxLayout(left_frame)
         left_layout.setAlignment(Qt.AlignTop)
 
-        # Pair 1: Dir 1 Label and Button
-        pair_1_layout = QHBoxLayout()
-        dir_1_label = QLabel("Dir 1 Path:", left_frame)
-        dir_1_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
-        dir_1_chosen_textfield.setReadOnly(False)  # allow user to paste its path
-        select_dir_1_button = QPushButton("...", left_frame)
+        # Groupbox : ROM Dir
+        rom_dir_group_box = QGroupBox("ROM Dir", left_frame)
+
+        # ROM Dir Label and Button
+        rom_dir_layout = QGridLayout()
+        dir_1_label = QLabel("ROM Folder:")
+        dir_1_chosen_textfield = QLineEdit("")
+        dir_1_chosen_textfield.setReadOnly(False)
+        select_dir_1_button = QPushButton("...")
         select_dir_1_button.clicked.connect(self.browse_dir_1)
         select_dir_1_button.setFixedSize(20, select_dir_1_button.sizeHint().height())
-        pair_1_layout.addWidget(dir_1_label)
-        pair_1_layout.addWidget(dir_1_chosen_textfield)  # Add the new label
-        pair_1_layout.addWidget(select_dir_1_button)
-        left_layout.addLayout(pair_1_layout)
+        rom_extension_label = QLabel("Extensions:")
+        rom_extension_textfield = QLineEdit("")
+        rom_extension_textfield.setReadOnly(False)    
+        rom_extension_textfield.setText(self.settings.rom_extension_default)
+        rom_extension_textfield.setFixedWidth(200)    
+        rom_dir_layout.addWidget(dir_1_label, 0, 0)
+        rom_dir_layout.addWidget(dir_1_chosen_textfield, 0, 1)
+        rom_dir_layout.addWidget(select_dir_1_button, 0, 2)
+        rom_dir_layout.addWidget(rom_extension_label, 1, 0)
+        rom_dir_layout.addWidget(rom_extension_textfield, 1, 1)
 
-        # Pair 2: Dir 2 Label and Button
-        pair_2_layout = QHBoxLayout()
-        dir_2_label = QLabel("Dir 2 Path:", left_frame)
-        dir_2_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
-        dir_2_chosen_textfield.setReadOnly(False)  # allow user to paste its path
-        select_dir_2_button = QPushButton("...", left_frame)
+        rom_dir_group_box.setLayout(rom_dir_layout)
+        left_layout.addWidget(rom_dir_group_box)
+
+        # Groupbox : Media Dir
+        media_dir_group_box = QGroupBox("Media Dir", left_frame)
+
+        # Media Dir Label and Button
+        media_dir_layout = QGridLayout()
+        dir_2_label = QLabel("Media Folder:")
+        dir_2_chosen_textfield = QLineEdit("")
+        dir_2_chosen_textfield.setReadOnly(False)
+        select_dir_2_button = QPushButton("...")
         select_dir_2_button.clicked.connect(self.browse_dir_2)
         select_dir_2_button.setFixedSize(20, select_dir_2_button.sizeHint().height())
-        pair_2_layout.addWidget(dir_2_label)
-        pair_2_layout.addWidget(dir_2_chosen_textfield)
-        pair_2_layout.addWidget(select_dir_2_button)  # Add the new label
-        left_layout.addLayout(pair_2_layout)
+        media_extension_label = QLabel("Extensions:")
+        media_extension_textfield = QLineEdit("")
+        media_extension_textfield.setReadOnly(False)    
+        media_extension_textfield.setText(self.settings.media_extension_default)
+        media_extension_textfield.setFixedWidth(200)           
+        media_dir_layout.addWidget(dir_2_label, 0, 0)
+        media_dir_layout.addWidget(dir_2_chosen_textfield, 0, 1)
+        media_dir_layout.addWidget(select_dir_2_button, 0, 2)
+        media_dir_layout.addWidget(media_extension_label, 1, 0)
+        media_dir_layout.addWidget(media_extension_textfield, 1, 1)
+
+        media_dir_group_box.setLayout(media_dir_layout)
+        left_layout.addWidget(media_dir_group_box)
+
+        # Groupbox : Image Popup Dialog
+        image_popup_group_box = QGroupBox("Image Popup Dialog", left_frame)
+
+        # Media Dir Label and Button
+        image_popup_layout = QGridLayout()
+        max_items_to_show_label = QLabel("Maximum items to show:")
+        max_items_to_show_textfield = QLineEdit("")
+        max_items_to_show_textfield.setReadOnly(False)    
+        max_items_to_show_textfield.setText(f"{self.settings.max_image_to_show}")
+        max_items_to_show_help_button = QPushButton("?")
+        max_items_to_show_help_button.setToolTip("Click for help")
+        max_items_to_show_help_button.setFixedWidth(50)
+        max_items_to_show_help_button.clicked.connect(lambda: self.show_help_dialog("How many maximum images to show in the popup dialog."))                
+        image_popup_layout.addWidget(max_items_to_show_label, 0, 0)
+        image_popup_layout.addWidget(max_items_to_show_textfield, 0, 1)
+        image_popup_layout.addWidget(max_items_to_show_help_button, 0, 2)
+
+        image_popup_group_box.setLayout(image_popup_layout)
+        left_layout.addWidget(image_popup_group_box)     
+
+        # Groupbox : General Settings
+        general_group_box = QGroupBox("General Settings", left_frame)           
+        selected_image_match_ratio_layout = QHBoxLayout()
+        selected_image_match_ratio_label = QLabel("Selected image match ratio:", left_frame)
+        selected_image_match_ratio_chosen_textfield = QLineEdit("", left_frame)  # New text field to display chosen dir path
+        selected_image_match_ratio_chosen_textfield.setReadOnly(False)  # allow user to paste its path
+        selected_image_match_ratio_chosen_textfield.setText(self.settings.selected_image_match_ratio_default)
+        selected_image_match_ratio_help_button = QPushButton("?")
+        selected_image_match_ratio_help_button.setToolTip("Click for help")
+        selected_image_match_ratio_help_button.setFixedWidth(50)
+        selected_image_match_ratio_help_button.clicked.connect(lambda: self.show_help_dialog("Image with match ratio above this value will be automatically set as chosen image in Column 3.\nE.g. if set to 65, any match ratio that is at least 65 will be chosen as Chosen Image in Column 3."))
+        selected_image_match_ratio_layout.addWidget(selected_image_match_ratio_label)
+        selected_image_match_ratio_layout.addWidget(selected_image_match_ratio_chosen_textfield)
+        selected_image_match_ratio_layout.addWidget(selected_image_match_ratio_help_button)
+
+        general_group_box.setLayout(selected_image_match_ratio_layout)
+        left_layout.addWidget(general_group_box)
+
 
         # Button to start fuzzy match
         start_match_button = QPushButton("Start Match", left_frame)
@@ -296,14 +410,18 @@ class FuzzyMatchApp(QMainWindow):
 
         # Statistics label
         self.statistics_label = QLabel("Statistics: 0 empty cells in Column 3", left_frame)
-        left_layout.addWidget(self.statistics_label)              
+        left_layout.addWidget(self.statistics_label)           
+       
 
         layout.addWidget(left_frame)
         
-
         # add to self so that other class can refer
         self.leftframe_dir_1_chosen_textfield = dir_1_chosen_textfield
         self.leftframe_dir_2_chosen_textfield = dir_2_chosen_textfield
+        self.leftframe_selected_image_match_ratio_chosen_textfield = selected_image_match_ratio_chosen_textfield
+        self.leftframe_rom_extension_textfield = rom_extension_textfield
+        self.leftframe_media_extension_textfield = media_extension_textfield
+        self.leftframe_max_items_to_show_textfield = max_items_to_show_textfield
 
         # --------------
 
@@ -347,6 +465,9 @@ class FuzzyMatchApp(QMainWindow):
         self.table_view.setColumnWidth(1, 200)
         # self.table_view.setColumnWidth(2, 400)
 
+        self.model.setColumnCount(4)
+        self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images", "Chosen Image"])        
+
     def show_directory_error_dialog(self):
         error_dialog = QDialog(self)
         error_dialog.setWindowTitle("Directory Error")
@@ -369,6 +490,11 @@ class FuzzyMatchApp(QMainWindow):
         dir_1_path = self.leftframe_dir_1_chosen_textfield.text()
         dir_2_path = self.leftframe_dir_2_chosen_textfield.text()
 
+        # read settings from text fields
+        self.settings.rom_extension_chosen = self.leftframe_rom_extension_textfield.text()
+        self.settings.media_extension_chosen = self.leftframe_media_extension_textfield.text()
+        self.settings.max_image_to_show = self.leftframe_max_items_to_show_textfield.text()
+
         if not os.path.isdir(dir_1_path) or not os.path.isdir(dir_2_path):
             self.show_directory_error_dialog()
             return        
@@ -377,6 +503,7 @@ class FuzzyMatchApp(QMainWindow):
         self.status_label.setText("Processing...")
 
         self.fuzzy_thread.setDirectories(dir_1_path, dir_2_path)
+        self.fuzzy_thread.setFileExtensions(self.settings.rom_extension_chosen, self.settings.media_extension_chosen)
         self.fuzzy_thread.start()        
 
         self.DIR1 = dir_1_path
@@ -386,6 +513,7 @@ class FuzzyMatchApp(QMainWindow):
         combo_box_delegate = self.table_view.itemDelegateForColumn(2)
         if combo_box_delegate:
             combo_box_delegate.set_DIR2(self.DIR2)
+            combo_box_delegate.setSettings(self.settings)
 
     def update_status_label(self, filename):
         if len(filename) > 50:
@@ -476,7 +604,8 @@ class FuzzyMatchApp(QMainWindow):
                     item_3.setBackground(QBrush(QColor(0, 200, 0))) 
                 elif detected_images_sorted_data[0][1] >= 65:
                     item_3.setBackground(QBrush(QColor(255, 255, 0))) # yellow
-                elif detected_images_sorted_data[0][1] < 65:
+                # set to empty if the selected image match ratio is below the user chosen value
+                elif detected_images_sorted_data[0][1] < int(self.leftframe_selected_image_match_ratio_chosen_textfield.text()):
                     item_3 = QStandardItem("")
                     empty_cells_count += 1  # Increment count for empty cells
 
