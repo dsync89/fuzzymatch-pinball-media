@@ -1,0 +1,7 @@
+class Constant:   
+    
+    MAIN_WINDOW_W = 1280
+    MAIN_WINDOW_H = 720
+
+    IMAGE_POPUP_DIALOG_W = 600
+    IMAGE_POPUP_DIALOG_H = 400

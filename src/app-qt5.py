@@ -11,6 +11,8 @@ import re
 
 import debugpy
 
+from constant import Constant
+
 debugpy.listen(('localhost', 5678))
 
 # DIR1 = "r:\\ROMS-1G1R\\pinball\\Visual Pinball\\test"
@@ -39,7 +41,7 @@ class ImagePopupDialog(QDialog):
         self.DIR2 = DIR2
 
         self.setWindowTitle("Select Image")
-        self.setGeometry(200, 200, 600, 400)
+        self.setGeometry(200, 200, Constant.IMAGE_POPUP_DIALOG_W, Constant.IMAGE_POPUP_DIALOG_H)
 
         self.item_per_row = 5 # 5 images per row
         self.max_item_show = int(settings.max_image_to_show)  # maximum item to show
@@ -261,7 +263,7 @@ class FuzzyMatchApp(QMainWindow):
         super(FuzzyMatchApp, self).__init__()
 
         self.setWindowTitle("Fuzzy Match App")
-        self.setGeometry(100, 100, 1280, 720)
+        self.setGeometry(100, 100, Constant.MAIN_WINDOW_W, Constant.MAIN_WINDOW_H)
 
         self.dir_1_path = ""
         self.dir_2_path = ""
@@ -300,7 +302,9 @@ class FuzzyMatchApp(QMainWindow):
 
         layout = QHBoxLayout()
 
+        # ---------------------------------------------------------------
         # Left frame
+        # ---------------------------------------------------------------
         left_frame = QFrame(self)
         left_frame.setFixedWidth(500)  # Set the minimum width
         left_layout = QVBoxLayout(left_frame)
@@ -424,13 +428,15 @@ class FuzzyMatchApp(QMainWindow):
         self.leftframe_media_extension_textfield = media_extension_textfield
         self.leftframe_max_items_to_show_textfield = max_items_to_show_textfield
 
-        # --------------
-
+        # ---------------------------------------------------------------
         # Right frame
+        # ---------------------------------------------------------------
         right_frame = QFrame(self)
         right_layout = QVBoxLayout(right_frame)
 
         self.table_view = QTableView(self)
+        self.setup_table()        
+
         right_layout.addWidget(self.table_view)
 
         start_rename_button = QPushButton("Start Rename", right_frame)
@@ -440,9 +446,10 @@ class FuzzyMatchApp(QMainWindow):
 
         layout.addWidget(right_frame)
 
+        # add left and right frame to Central Widget
         central_widget.setLayout(layout)
 
-        # Initialize the table view with an empty model
+    def setup_table(self):
         self.model = QStandardItemModel(self)
         self.table_view.setModel(self.model)
 
@@ -468,7 +475,7 @@ class FuzzyMatchApp(QMainWindow):
         # self.table_view.setColumnWidth(2, 400)
 
         self.model.setColumnCount(4)
-        self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images", "Chosen Image"])        
+        self.model.setHorizontalHeaderLabels([".ahk Filename", "Fuzzy Matched Image", "Detected Images", "Chosen Image"]) 
 
     def show_directory_error_dialog(self):
         error_dialog = QDialog(self)
@@ -536,35 +543,6 @@ class FuzzyMatchApp(QMainWindow):
         if directory:
             self.dir_2_path = directory
             self.leftframe_dir_2_chosen_textfield.setText(directory)  # Update the label text
-
-    # def start_fuzzy_match(self):
-    #     fuzzy_match_results = self.perform_fuzzy_match(self.dir_1_path, self.dir_2_path)
-    #     self.update_table_view_with_fuzzy_match(fuzzy_match_results)
-
-    def perform_fuzzy_matc2(self, dir_1_path, dir_2_path):
-        dir_1_files = [file for file in os.listdir(dir_1_path) if file.endswith(".ahk")]
-        dir_2_images = [file for file in os.listdir(dir_2_path) if file.endswith((".jpg", ".png"))]
-
-        dir_1_files = [os.path.splitext(file)[0] for file in dir_1_files]
-        dir_2_images = [os.path.splitext(file)[0] for file in dir_2_images]
-
-        fuzzy_match_results = []
-
-        total_files = len(dir_1_files)
-        processed_files = 0
-
-        for file_1 in dir_1_files:
-            best_match = max(dir_2_images, key=lambda file_2: fuzz.ratio(file_1, file_2))
-            detected_images = [(file, fuzz.ratio(file_1, file)) for file in dir_2_images if fuzz.ratio(file_1, file) >= 10]
-
-            fuzzy_match_results.append((file_1, best_match, detected_images))
-
-            processed_files += 1
-            progress_percentage = int(processed_files / total_files * 100)
-            self.progressUpdated.emit(progress_percentage)
-            self.fileProcessed.emit(file_1)
-
-        return fuzzy_match_results
 
 
     def update_table_view_with_fuzzy_match(self, fuzzy_match_results):
