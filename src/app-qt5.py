@@ -397,6 +397,7 @@ class FuzzyMatchApp(QMainWindow):
 
         # Button to start fuzzy match
         start_match_button = QPushButton("Start Match", left_frame)
+        start_match_button.setFixedHeight(50)
         start_match_button.clicked.connect(self.start_fuzzy_match)
         left_layout.addWidget(start_match_button)
 
@@ -433,6 +434,7 @@ class FuzzyMatchApp(QMainWindow):
         right_layout.addWidget(self.table_view)
 
         start_rename_button = QPushButton("Start Rename", right_frame)
+        start_rename_button.setFixedHeight(50)
         start_rename_button.clicked.connect(self.start_rename)
         right_layout.addWidget(start_rename_button)
 
